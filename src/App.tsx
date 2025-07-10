@@ -1,3 +1,4 @@
+import { WholeWord } from "lucide-react";
 import { useCallback, useState } from "react";
 import Editor from "./components/Editor";
 import StatsPanel from "./components/StatsPanel";
@@ -13,6 +14,9 @@ export default function App() {
 		adverbCount: 0,
 		passiveVoiceSentences: 0,
 		readabilityGrade: 0,
+		readingEase: 0,
+		smogIndex: 0,
+		gunningFog: 0,
 	});
 
 	const handleAnalysis = useCallback((res: AnalysisResult) => {
@@ -23,9 +27,6 @@ export default function App() {
 
 	return (
 		<div className="flex flex-col h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50">
-			<h1 className="text-2xl font-bold py-2 pl-8 pr-4 text-slate-900 dark:text-slate-100">
-				Plain Language Studio
-			</h1>
 			<Toolbar
 				highlightsEnabled={showHighlights}
 				onToggleHighlights={() => setShowHighlights((prev) => !prev)}

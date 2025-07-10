@@ -1,3 +1,5 @@
+import readability from "text-readability";
+
 export interface AnalysisResult {
 	wordCount: number;
 	sentenceCount: number;
@@ -9,6 +11,12 @@ export interface AnalysisResult {
 	passiveVoiceSentences: number;
 	/** Flesch–Kincaid Grade Level (approximate, 1 decimal place) */
 	readabilityGrade: number;
+	/** Flesch Reading Ease score (0–100, higher is easier) */
+	readingEase: number;
+	/** SMOG index */
+	smogIndex: number;
+	/** Gunning Fog index */
+	gunningFog: number;
 }
 
 /**
@@ -32,15 +40,13 @@ export function analyzeText(text: string): AnalysisResult {
 		passiveVoiceRegex.test(s),
 	).length;
 
-	const syllableCount = words.reduce((sum, w) => sum + countSyllables(w), 0);
-	const wordsPerSentence =
-		sentences.length === 0 ? 0 : words.length / sentences.length;
-	const syllablesPerWord =
-		words.length === 0 ? 0 : syllableCount / words.length;
-	// Flesch–Kincaid Grade Level
-	// Clamp to 0 so we never report negative grade levels.
-	const rawGrade = 0.39 * wordsPerSentence + 11.8 * syllablesPerWord - 15.59;
-	const readabilityGrade = Number(Math.max(0, rawGrade).toFixed(1));
+	// Use library for more accurate Flesch–Kincaid Grade Level
+	const readabilityGradeRaw = readability.fleschKincaidGrade(text);
+	const readabilityGrade = Number(Math.max(0, readabilityGradeRaw).toFixed(1));
+
+	const readingEase = Number(readability.fleschReadingEase(text).toFixed(1));
+	const smogIndex = Number(readability.smogIndex(text).toFixed(1));
+	const gunningFog = Number(readability.gunningFog(text).toFixed(1));
 
 	return {
 		wordCount: words.length,
@@ -50,6 +56,9 @@ export function analyzeText(text: string): AnalysisResult {
 		adverbCount,
 		passiveVoiceSentences,
 		readabilityGrade,
+		readingEase,
+		smogIndex,
+		gunningFog,
 	};
 }
 
@@ -61,22 +70,7 @@ function splitSentences(text: string): string[] {
 		.filter(Boolean);
 }
 
-// very rough syllable counting: count vowel groups, subtract silent 'e' endings, ensure min 1
-function countSyllables(word: string): number {
-	const lower = word.toLowerCase();
-	if (lower.length <= 3) return 1; // short words heuristic
-
-	// remove non-alphabetic chars
-	const cleaned = lower.replace(/[^a-z]/g, "");
-	if (!cleaned) return 1;
-
-	// remove trailing "e"
-	const withoutTrailingE = cleaned.replace(/e$/i, "");
-
-	// count vowel groups
-	const groups = withoutTrailingE.match(/[aeiouy]{1,2}/g);
-	return Math.max(1, groups ? groups.length : 1);
-}
+// removed legacy countSyllables helper; accuracy now provided by text-readability
 
 // Shared regex to match words including internal apostrophes (e.g. "James's", "can't").
 const wordRegex = /[A-Za-z0-9]+(?:'[A-Za-z0-9]+)*/g;

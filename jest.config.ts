@@ -12,6 +12,7 @@ const config: Config = {
 			},
 		],
 	},
+	transformIgnorePatterns: ["/node_modules/(?!(text-readability)/)"],
 	extensionsToTreatAsEsm: [".ts", ".tsx"],
 	globals: {
 		"ts-jest": {

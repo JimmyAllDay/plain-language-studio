@@ -11,7 +11,11 @@ export default function StatsPanel({ data }: Props) {
 			className="w-64 shrink-0 bg-slate-50 dark:bg-slate-900 p-4 h-screen overflow-y-auto"
 		>
 			<h2 className="font-semibold text-lg mb-2">Readability</h2>
-			<p className="mb-4">Grade {data.readabilityGrade}</p>
+			<p className="mb-1">Grade {data.readabilityGrade}</p>
+			<p className="mb-1 text-xs">Ease {data.readingEase}</p>
+			<p className="mb-4 text-xs">
+				SMOG {data.smogIndex} • Fog {data.gunningFog}
+			</p>
 
 			<h3 className="font-medium mb-1">Words: {data.wordCount}</h3>
 

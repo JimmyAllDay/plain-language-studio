@@ -78,12 +78,10 @@ export default function Editor({
 						type: "module",
 					});
 				} else {
-					// Use Vite's worker bundling but avoid a literal `import.meta` so Jest CommonJS
-					// doesn't choke. We generate it via `eval`, which the bundler still optimizes.
-					const importMetaUrl = eval("import.meta.url") as string;
+					// Use eval so Jest (CJS) doesn't choke on import.meta.
 					const workerUrl = new URL(
 						"../workers/analyzer.ts",
-						/* @vite-ignore */ importMetaUrl,
+						eval("import.meta.url") as string,
 					);
 					workerRef.current = new Worker(workerUrl, { type: "module" });
 				}
