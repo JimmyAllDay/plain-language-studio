@@ -4,7 +4,21 @@ const config: Config = {
 	testEnvironment: "jsdom",
 	roots: ["<rootDir>/src"],
 	transform: {
-		"^.+\\.(t|j)sx?$": ["ts-jest", { tsconfig: "tsconfig.jest.json" }],
+		"^.+\\.(t|j)sx?$": [
+			"ts-jest",
+			{
+				tsconfig: "tsconfig.jest.json",
+				useESM: true,
+			},
+		],
+	},
+	extensionsToTreatAsEsm: [".ts", ".tsx"],
+	globals: {
+		"ts-jest": {
+			diagnostics: {
+				ignoreCodes: [1343],
+			},
+		},
 	},
 	moduleNameMapper: {
 		"\\.(css|less|sass|scss)$": "identity-obj-proxy",

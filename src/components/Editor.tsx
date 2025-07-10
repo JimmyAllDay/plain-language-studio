@@ -3,6 +3,9 @@ import { type AnalysisResult, analyzeText } from "../core/analysis";
 import { buildHighlightedHtml } from "../core/highlightHtml";
 import { computeHighlights } from "../core/highlights";
 
+// Detect worker support once to avoid re-evaluating in every render.
+const hasWorkerSupport = typeof Worker !== "undefined";
+
 interface Props {
 	onAnalysis: (res: AnalysisResult) => void;
 	highlightsEnabled?: boolean;
@@ -56,10 +59,75 @@ export default function Editor({
 }: Props) {
 	const ref = useRef<HTMLDivElement>(null);
 
+	// Keep a singleton worker instance for this component lifecycle.
+	const workerRef = useRef<Worker | null>(null);
+	const prevTextRef = useRef<string>("");
+
 	useEffect(() => {
 		const el = ref.current;
 		if (!el) return;
-		onAnalysis(analyzeText(""));
+
+		// Lazily create the worker once when the component mounts (if supported)
+		if (hasWorkerSupport && !workerRef.current) {
+			try {
+				const isTestEnv =
+					typeof (globalThis as { jest?: unknown }).jest !== "undefined";
+				if (isTestEnv) {
+					// Simpler path to keep Jest (CommonJS) happy — no import.meta.
+					workerRef.current = new Worker("/src/workers/analyzer.ts", {
+						type: "module",
+					});
+				} else {
+					// Use Vite's worker bundling but avoid a literal `import.meta` so Jest CommonJS
+					// doesn't choke. We generate it via `eval`, which the bundler still optimizes.
+					const importMetaUrl = eval("import.meta.url") as string;
+					const workerUrl = new URL(
+						"../workers/analyzer.ts",
+						/* @vite-ignore */ importMetaUrl,
+					);
+					workerRef.current = new Worker(workerUrl, { type: "module" });
+				}
+			} catch (err) {
+				console.error(
+					"Failed to create worker, falling back to main thread",
+					err,
+				);
+				workerRef.current = null;
+			}
+
+			// Forward the computed analysis result back to the parent.
+			if (workerRef.current)
+				workerRef.current.onmessage = (
+					e: MessageEvent<{
+						result: AnalysisResult;
+						highlights: ReturnType<typeof computeHighlights>;
+					}>,
+				) => {
+					const { result, highlights } = e.data;
+					onAnalysis(result);
+					const elCurrent = ref.current;
+					if (!elCurrent) return;
+					const caret = getCaretOffset(elCurrent);
+
+					const html = buildHighlightedHtml(
+						prevTextRef.current,
+						highlightsEnabled ? highlights : [],
+					);
+					if (elCurrent.innerHTML !== html) {
+						elCurrent.innerHTML = html;
+						setCaretOffset(elCurrent, caret);
+					}
+				};
+		}
+
+		// Provide an initial empty analysis so the sidebar isn't blank.
+		if (!hasWorkerSupport) {
+			onAnalysis(analyzeText(""));
+			prevTextRef.current = "";
+		} else {
+			workerRef.current?.postMessage({ text: "" });
+			prevTextRef.current = "";
+		}
 
 		// --- Clipboard handlers ---
 		// Ensure pasted content is inserted as plain text and copied content excludes highlight markup.
@@ -74,14 +142,19 @@ export default function Editor({
 			const newText =
 				currentText.slice(0, caret) + text + currentText.slice(caret);
 
-			// Update analysis & highlights immediately
-			onAnalysis(analyzeText(newText));
-			const html = buildHighlightedHtml(
-				newText,
-				highlightsEnabled ? computeHighlights(newText) : [],
-			);
-			el.innerHTML = html;
-			setCaretOffset(el, caret + text.length);
+			if (workerRef.current) {
+				workerRef.current.postMessage({ text: newText });
+				prevTextRef.current = newText;
+			} else {
+				// Fallback: compute in main thread
+				onAnalysis(analyzeText(newText));
+				const html = buildHighlightedHtml(
+					newText,
+					highlightsEnabled ? computeHighlights(newText) : [],
+				);
+				el.innerHTML = html;
+				setCaretOffset(el, caret + text.length);
+			}
 		};
 
 		const handleCopy = (e: ClipboardEvent) => {
@@ -99,20 +172,57 @@ export default function Editor({
 			if (!ref.current) return;
 			const caret = getCaretOffset(ref.current);
 			const text = ref.current.innerText;
-			onAnalysis(analyzeText(text));
-			const html = buildHighlightedHtml(
-				text,
-				highlightsEnabled ? computeHighlights(text) : [],
-			);
-			if (ref.current.innerHTML !== html) {
-				ref.current.innerHTML = html;
-				setCaretOffset(ref.current, caret);
+
+			if (workerRef.current) {
+				// Compute diff against previous text to send as incremental patch.
+				const prev = prevTextRef.current;
+				if (prev === "") {
+					workerRef.current.postMessage({ text });
+				} else {
+					// Simple diff algorithm (prefix/suffix trim)
+					let start = 0;
+					while (
+						start < prev.length &&
+						start < text.length &&
+						prev[start] === text[start]
+					) {
+						start++;
+					}
+					let prevEnd = prev.length - 1;
+					let newEnd = text.length - 1;
+					while (
+						prevEnd >= start &&
+						newEnd >= start &&
+						prev[prevEnd] === text[newEnd]
+					) {
+						prevEnd--;
+						newEnd--;
+					}
+					const end = prevEnd + 1; // slice end index in previous text
+					const insert = text.slice(start, newEnd + 1);
+					workerRef.current.postMessage({ start, end, insert });
+				}
+
+				prevTextRef.current = text;
+			} else {
+				// Fallback path: compute everything in main thread
+				onAnalysis(analyzeText(text));
+				const html = buildHighlightedHtml(
+					text,
+					highlightsEnabled ? computeHighlights(text) : [],
+				);
+				if (ref.current.innerHTML !== html) {
+					ref.current.innerHTML = html;
+					setCaretOffset(ref.current, caret);
+				}
 			}
 		};
 
 		const schedule = () => {
 			if (pending !== null) window.clearTimeout(pending);
-			pending = window.setTimeout(process, 150);
+			const base = 100;
+			const extra = Math.min((prevTextRef.current.length / 1000) * 50, 400);
+			pending = window.setTimeout(process, base + extra);
 		};
 
 		el.addEventListener("input", schedule);
@@ -123,6 +233,9 @@ export default function Editor({
 			el.removeEventListener("paste", handlePaste);
 			el.removeEventListener("copy", handleCopy);
 			if (pending !== null) window.clearTimeout(pending);
+
+			// Terminate the worker when the component unmounts.
+			workerRef.current?.terminate();
 		};
 	}, [onAnalysis, highlightsEnabled]);
 
