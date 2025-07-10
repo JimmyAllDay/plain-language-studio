@@ -1,4 +1,5 @@
 # React + TypeScript + Vite
+![CI](https://github.com/JimmyAllDay/plain-language-studio/actions/workflows/ci.yml/badge.svg)
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 

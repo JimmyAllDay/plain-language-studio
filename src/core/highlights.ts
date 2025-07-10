@@ -13,13 +13,14 @@ export interface Highlight {
 export function computeHighlights(text: string): Highlight[] {
 	const highlights: Highlight[] = [];
 	const adverbRegex = /\b\w+ly\b/gi;
-	let match: RegExpExecArray | null;
-	while ((match = adverbRegex.exec(text)) !== null) {
-		highlights.push({
-			start: match.index,
-			end: match.index + match[0].length,
-			type: "adverb",
-		});
+	for (const match of text.matchAll(adverbRegex)) {
+		if (typeof match.index === "number") {
+			highlights.push({
+				start: match.index,
+				end: match.index + match[0].length,
+				type: "adverb",
+			});
+		}
 	}
 	return highlights;
 }
