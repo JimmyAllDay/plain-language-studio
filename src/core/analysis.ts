@@ -1,6 +1,8 @@
 export interface AnalysisResult {
 	wordCount: number;
 	sentenceCount: number;
+	/** Number of sentences moderately long (warning level) */
+	mediumSentences: number;
 	longSentences: number;
 	adverbCount: number;
 	/** Number of sentences likely written in passive voice */
@@ -15,11 +17,12 @@ export interface AnalysisResult {
  */
 export function analyzeText(text: string): AnalysisResult {
 	const sentences = splitSentences(text);
-	const words = text.match(/\b\w+\b/g) ?? [];
+	const words = getWords(text);
 
-	const longSentences = sentences.filter(
-		(s) => (s.match(/\b\w+\b/g) ?? []).length > 15,
+	const mediumSentences = sentences.filter(
+		(s) => getWords(s).length > 12,
 	).length;
+	const longSentences = sentences.filter((s) => getWords(s).length > 17).length;
 	const adverbCount = (text.match(/\b\w+ly\b/gi) ?? []).length;
 
 	// passive voice – heuristic: form of "to be" followed by a verb that looks like a past participle and optionally "by"
@@ -35,13 +38,14 @@ export function analyzeText(text: string): AnalysisResult {
 	const syllablesPerWord =
 		words.length === 0 ? 0 : syllableCount / words.length;
 	// Flesch–Kincaid Grade Level
-	const readabilityGrade = Number(
-		(0.39 * wordsPerSentence + 11.8 * syllablesPerWord - 15.59).toFixed(1),
-	);
+	// Clamp to 0 so we never report negative grade levels.
+	const rawGrade = 0.39 * wordsPerSentence + 11.8 * syllablesPerWord - 15.59;
+	const readabilityGrade = Number(Math.max(0, rawGrade).toFixed(1));
 
 	return {
 		wordCount: words.length,
 		sentenceCount: sentences.length,
+		mediumSentences,
 		longSentences,
 		adverbCount,
 		passiveVoiceSentences,
@@ -72,4 +76,12 @@ function countSyllables(word: string): number {
 	// count vowel groups
 	const groups = withoutTrailingE.match(/[aeiouy]{1,2}/g);
 	return Math.max(1, groups ? groups.length : 1);
+}
+
+// Shared regex to match words including internal apostrophes (e.g. "James's", "can't").
+const wordRegex = /[A-Za-z0-9]+(?:'[A-Za-z0-9]+)*/g;
+
+/** Return an array of words detected in the text using `wordRegex`. */
+function getWords(text: string): string[] {
+	return text.match(wordRegex) ?? [];
 }

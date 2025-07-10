@@ -8,6 +8,7 @@ export default function App() {
 	const [analysis, setAnalysis] = useState<AnalysisResult>({
 		wordCount: 0,
 		sentenceCount: 0,
+		mediumSentences: 0,
 		longSentences: 0,
 		adverbCount: 0,
 		passiveVoiceSentences: 0,
@@ -22,7 +23,7 @@ export default function App() {
 
 	return (
 		<div className="flex flex-col h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50">
-			<h1 className="text-2xl font-bold py-2 px-4 text-slate-900 dark:text-slate-100">
+			<h1 className="text-2xl font-bold py-2 pl-8 pr-4 text-slate-900 dark:text-slate-100">
 				Plain Language Studio
 			</h1>
 			<Toolbar

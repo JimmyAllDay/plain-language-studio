@@ -33,4 +33,9 @@ describe("analyzeText", () => {
 		const res = analyzeText("The quick brown fox jumps over the lazy dog.");
 		expect(res.readabilityGrade).toBeGreaterThanOrEqual(0);
 	});
+
+	it("counts words with apostrophes correctly", () => {
+		const res = analyzeText("James's cat can't find its toy.");
+		expect(res.wordCount).toBe(6);
+	});
 });

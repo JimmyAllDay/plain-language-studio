@@ -19,6 +19,9 @@ export default function StatsPanel({ data }: Props) {
 				<li className="bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 px-3 py-2 rounded">
 					{data.longSentences} long sentences
 				</li>
+				<li className="bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 px-3 py-2 rounded">
+					{data.mediumSentences} medium sentences
+				</li>
 				<li className="bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 px-3 py-2 rounded">
 					{data.adverbCount} adverbs
 				</li>

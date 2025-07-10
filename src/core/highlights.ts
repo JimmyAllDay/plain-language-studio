@@ -42,10 +42,11 @@ export function computeHighlights(text: string): Highlight[] {
 		const sentence = sentenceMatch[0];
 		const start = sentenceMatch.index;
 		const end = start + sentence.length;
-		const wordCount = (sentence.match(/\b\w+\b/g) ?? []).length;
+		const wordCount = (sentence.match(/[A-Za-z0-9]+(?:'[A-Za-z0-9]+)*/g) ?? [])
+			.length;
 
-		const isLongWarning = wordCount > 10;
-		const isLong = wordCount > 15;
+		const isLongWarning = wordCount > 12;
+		const isLong = wordCount > 17;
 		const isPassive = passiveVoiceRegex.test(sentence);
 
 		if (isLong || isPassive || isLongWarning) {

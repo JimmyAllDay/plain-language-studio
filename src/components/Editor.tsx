@@ -239,6 +239,34 @@ export default function Editor({
 		};
 	}, [onAnalysis, highlightsEnabled]);
 
+	useEffect(() => {
+		// Re-render highlights immediately when the toggle changes without waiting for user input.
+		const el = ref.current;
+		if (!el) return;
+		// Grab current plain text from the editor so we never lose content.
+		const text = el.innerText || el.textContent || "";
+		prevTextRef.current = text;
+
+		// Preserve caret position for good UX
+		const caret = getCaretOffset(el);
+
+		// Render immediately on the main thread so users never see a blank editor.
+		const htmlNow = buildHighlightedHtml(
+			text,
+			highlightsEnabled ? computeHighlights(text) : [],
+		);
+		el.innerHTML = htmlNow;
+		setCaretOffset(el, caret);
+
+		// Ask the worker (if available) to recompute to keep analysis sidebar fresh.
+		if (hasWorkerSupport && workerRef.current) {
+			workerRef.current.postMessage({ text });
+		} else {
+			// Fallback: update analysis on main thread
+			onAnalysis(analyzeText(text));
+		}
+	}, [highlightsEnabled, onAnalysis]);
+
 	return (
 		<div
 			tabIndex={0}
@@ -249,7 +277,7 @@ export default function Editor({
 			aria-multiline="true"
 			aria-label="Plain text editor"
 			aria-describedby="stats-panel"
-			className="h-full w-full outline-none p-4 whitespace-pre-wrap break-words bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-50"
+			className="h-full w-full max-w-3xl mx-auto outline-none p-4 whitespace-pre-wrap break-words bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-50"
 			data-placeholder="Start typing here..."
 		/>
 	);

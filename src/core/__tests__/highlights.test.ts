@@ -21,9 +21,9 @@ describe("computeHighlights", () => {
 		expect(longHls).toHaveLength(1);
 	});
 
-	it("highlights warning sentences (>10 words)", () => {
+	it("highlights warning sentences (>12 words)", () => {
 		const text =
-			"This sentence contains just enough words to trigger the orange warning highlight.";
+			"This sentence has exactly fifteen words in it to trigger an orange warning highlight.";
 		const hl = computeHighlights(text);
 		const warning = hl.find((h) => h.type === "long-warning");
 		expect(warning).toBeDefined();
