@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import Editor from "./components/Editor";
 import StatsPanel from "./components/StatsPanel";
+import Toolbar from "./components/Toolbar";
 import type { AnalysisResult } from "./core/analysis";
 
 export default function App() {
@@ -17,12 +18,21 @@ export default function App() {
 		setAnalysis(res);
 	}, []);
 
+	const [showHighlights, setShowHighlights] = useState(true);
+
 	return (
 		<div className="flex flex-col h-screen">
 			<h1 className="text-2xl font-bold">Plain Language Studio</h1>
+			<Toolbar
+				highlightsEnabled={showHighlights}
+				onToggleHighlights={() => setShowHighlights((prev) => !prev)}
+			/>
 			<div className="flex flex-1 overflow-hidden">
 				<main className="flex-1 overflow-auto p-4 prose dark:prose-invert max-w-none">
-					<Editor onAnalysis={handleAnalysis} />
+					<Editor
+						onAnalysis={handleAnalysis}
+						highlightsEnabled={showHighlights}
+					/>
 				</main>
 				<StatsPanel data={analysis} />
 			</div>

@@ -18,7 +18,7 @@ export function analyzeText(text: string): AnalysisResult {
 	const words = text.match(/\b\w+\b/g) ?? [];
 
 	const longSentences = sentences.filter(
-		(s) => (s.match(/\b\w+\b/g) ?? []).length > 20,
+		(s) => (s.match(/\b\w+\b/g) ?? []).length > 15,
 	).length;
 	const adverbCount = (text.match(/\b\w+ly\b/gi) ?? []).length;
 

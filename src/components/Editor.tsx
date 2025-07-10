@@ -5,6 +5,7 @@ import { computeHighlights } from "../core/highlights";
 
 interface Props {
 	onAnalysis: (res: AnalysisResult) => void;
+	highlightsEnabled?: boolean;
 }
 
 function getCaretOffset(root: HTMLElement): number {
@@ -49,7 +50,10 @@ function setCaretOffset(root: HTMLElement, offset: number) {
 	sel.addRange(range);
 }
 
-export default function Editor({ onAnalysis }: Props) {
+export default function Editor({
+	onAnalysis,
+	highlightsEnabled = true,
+}: Props) {
 	const ref = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
@@ -64,7 +68,10 @@ export default function Editor({ onAnalysis }: Props) {
 			const caret = getCaretOffset(ref.current);
 			const text = ref.current.innerText;
 			onAnalysis(analyzeText(text));
-			const html = buildHighlightedHtml(text, computeHighlights(text));
+			const html = buildHighlightedHtml(
+				text,
+				highlightsEnabled ? computeHighlights(text) : [],
+			);
 			if (ref.current.innerHTML !== html) {
 				ref.current.innerHTML = html;
 				setCaretOffset(ref.current, caret);
@@ -81,7 +88,7 @@ export default function Editor({ onAnalysis }: Props) {
 			el.removeEventListener("input", schedule);
 			if (pending !== null) window.clearTimeout(pending);
 		};
-	}, [onAnalysis]);
+	}, [onAnalysis, highlightsEnabled]);
 
 	return (
 		<div
