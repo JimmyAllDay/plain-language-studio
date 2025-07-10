@@ -61,6 +61,38 @@ export default function Editor({
 		if (!el) return;
 		onAnalysis(analyzeText(""));
 
+		// --- Clipboard handlers ---
+		// Ensure pasted content is inserted as plain text and copied content excludes highlight markup.
+		const handlePaste = (e: ClipboardEvent) => {
+			e.preventDefault();
+			const text = e.clipboardData?.getData("text/plain") ?? "";
+			if (!text) return;
+
+			// Preserve caret position, build new plain text string, and re-render with highlights.
+			const caret = getCaretOffset(el);
+			const currentText = el.innerText || el.textContent || "";
+			const newText =
+				currentText.slice(0, caret) + text + currentText.slice(caret);
+
+			// Update analysis & highlights immediately
+			onAnalysis(analyzeText(newText));
+			const html = buildHighlightedHtml(
+				newText,
+				highlightsEnabled ? computeHighlights(newText) : [],
+			);
+			el.innerHTML = html;
+			setCaretOffset(el, caret + text.length);
+		};
+
+		const handleCopy = (e: ClipboardEvent) => {
+			const sel = window.getSelection?.();
+			if (!sel) return;
+			const text = sel.toString();
+			if (!text) return;
+			e.preventDefault();
+			e.clipboardData?.setData("text/plain", text);
+		};
+
 		let pending: number | null = null;
 
 		const process = () => {
@@ -84,8 +116,12 @@ export default function Editor({
 		};
 
 		el.addEventListener("input", schedule);
+		el.addEventListener("paste", handlePaste);
+		el.addEventListener("copy", handleCopy);
 		return () => {
 			el.removeEventListener("input", schedule);
+			el.removeEventListener("paste", handlePaste);
+			el.removeEventListener("copy", handleCopy);
 			if (pending !== null) window.clearTimeout(pending);
 		};
 	}, [onAnalysis, highlightsEnabled]);
@@ -100,7 +136,7 @@ export default function Editor({
 			aria-multiline="true"
 			aria-label="Plain text editor"
 			aria-describedby="stats-panel"
-			className="h-full w-full outline-none p-4 whitespace-pre-wrap break-words"
+			className="h-full w-full outline-none p-4 whitespace-pre-wrap break-words bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-50"
 			data-placeholder="Start typing here..."
 		/>
 	);

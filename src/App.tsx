@@ -21,8 +21,10 @@ export default function App() {
 	const [showHighlights, setShowHighlights] = useState(true);
 
 	return (
-		<div className="flex flex-col h-screen">
-			<h1 className="text-2xl font-bold">Plain Language Studio</h1>
+		<div className="flex flex-col h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50">
+			<h1 className="text-2xl font-bold py-2 px-4 text-slate-900 dark:text-slate-100">
+				Plain Language Studio
+			</h1>
 			<Toolbar
 				highlightsEnabled={showHighlights}
 				onToggleHighlights={() => setShowHighlights((prev) => !prev)}

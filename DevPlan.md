@@ -31,7 +31,7 @@ graph TD
 3. components/Editor.tsx – textarea / contentEditable.  
 4. components/HighlightOverlay.tsx – positions colored spans.  
 5. components/StatsPanel.tsx – readability + counts.  
-6. components/Toolbar.tsx – mode switch, import/export, theme.
+6. components/Toolbar.tsx – highlights toggle.
 
 All components isolated and unit-tested.
 
@@ -46,9 +46,10 @@ All components isolated and unit-tested.
    - Iteration 1: Core editor (no analysis) + tests.
    - Iteration 2: Analysis engine (passive, adverbs) + sidebar metrics.
    - Iteration 3: Highlight overlay with colors & toggle.
-   - Iteration 4: Import/Export, clipboard, theme switch.
+   - Iteration 4: Clipboard, theme switch.
    - Iteration 5: Performance tuning with Web Worker.
-   - Iteration 6: Accessibility polish, dark mode visuals.
+   - Iteration 6: Accessibility and UI polish, dark mode visuals.
+   - Iteration 7: Add upload and document support - .docx, pdfs, etc, consider other features.
 4. **Quality Gates**
    - >90 % unit coverage.
    - All lint & type checks pass.
